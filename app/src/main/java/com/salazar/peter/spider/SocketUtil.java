@@ -63,6 +63,7 @@ public class SocketUtil {
 	private Logger logger = Logger.getLogger(SocketUtil.class.getName()); 
 	private String host; 
 	private String path; 
+	private String fileStr;
 	private SSLSocket sslSocket; 
 	
 	
@@ -74,6 +75,7 @@ public class SocketUtil {
 		// Set member var host
 		host = url.getHost(); 
 		path = url.getPath(); 
+		fileStr = url.getFile(); 
 		// init sslsocket factory to create socket
 		SSLSocketFactory sslsocketfactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
 		// try/catch block to initiate socket connection
@@ -103,6 +105,8 @@ public class SocketUtil {
 		String cookieStr; 
 		String location = ""; 
 	    StringBuilder finalHTML = new StringBuilder();
+        String responseLine;
+
 
 		try {
 	        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(sslSocket.getOutputStream()));
@@ -116,9 +120,7 @@ public class SocketUtil {
 	        writer.write(String.format("%s\r\n", request));
 	        writer.flush();
 	        
-	        String responseLine;
 	        while ((responseLine = reader.readLine()) != null) {
-//	            System.out.println(responseLine);
 	            response.append(responseLine + "\n");
 	            if (responseLine.matches("^Set-Cookie:\\s(\\S+=\\S+);.*$")) {
 	            	cookie = grabCookie(responseLine); 
@@ -126,11 +128,7 @@ public class SocketUtil {
 	            	cookieSeq.add(cookie[0]); 
 	            }
 	        }
-//	        System.out.println(cookieMap); 
-//	        System.out.println(cookieSeq); 
 	        cookieStr = assembleCookieString(cookieMap, cookieSeq.toArray(new String[cookieSeq.size()])); 
-//	        System.out.print(cookieStr+"\n"); 
-	        
 	        
 	        // GET request with cookies
 			SSLSocketFactory sslsocketfactory2 = (SSLSocketFactory) SSLSocketFactory.getDefault();
@@ -142,9 +140,7 @@ public class SocketUtil {
 	        writer2.write(String.format("Host: %s\r\n", host)); 
 	        writer2.write(String.format("Cookie: %s\r\n\r\n", cookieStr));
 	        writer2.flush();	    
-	        
 	        while ((responseLine = reader2.readLine()) != null) {
-//	        	System.out.println(responseLine); 
 	        	response.append(responseLine + "\n"); 
 	            if (responseLine.matches("^Set-Cookie:\\s(\\S+=\\S+);.*$")) {
 	            	cookie = grabCookie(responseLine); 
@@ -154,12 +150,7 @@ public class SocketUtil {
 	            if (responseLine.startsWith("Location:")) location = grabLocation(responseLine); 
 	        }
 	        cookieSeq.remove("smt.admin.loginComplete");
-//	        System.out.println(location); 
-//	        System.out.println(cookieMap); 
-//	        System.out.println(cookieSeq); 
 	        cookieStr = assembleCookieString(cookieMap, cookieSeq.toArray(new String[cookieSeq.size()])); 
-//	        System.out.print(cookieStr+"\n"); 
-	        
 	        
 		    // Final GET request with additional cookies & redirect
 			SSLSocketFactory sslsocketfactory3 = (SSLSocketFactory) SSLSocketFactory.getDefault();
@@ -171,9 +162,7 @@ public class SocketUtil {
 	        writer3.write(String.format("Cookie: %s\r\n", cookieStr));
 	        writer3.write(String.format("Host: %s\r\n\r\n", host)); 
 	        writer3.flush();	    
-	        
 	        while ((responseLine = reader3.readLine()) != null) {
-//	        	System.out.println(responseLine); 
 	        	response.append(responseLine + "\n"); 
 	        	if (responseLine.matches("^Set-Cookie:\\s(\\S+=\\S+);.*$")) {
 	            	cookie = grabCookie(responseLine); 
@@ -183,21 +172,17 @@ public class SocketUtil {
 	            if (responseLine.startsWith("Location:")) location = grabLocation(responseLine);
 	        }
 	        cookieStr = assembleCookieString(cookieMap, cookieSeq.toArray(new String[cookieSeq.size()])); 
-//	        System.out.print(cookieStr+"\n"); 
 	        
-	        
-	        // Final GET request for cache stats page
+	        // Final GET request for target page
  			SSLSocketFactory sslsocketfactory4 = (SSLSocketFactory) SSLSocketFactory.getDefault();
  			SSLSocket sslSocket4 = (SSLSocket) sslsocketfactory3.createSocket(host, 443);
  	        BufferedWriter writer4 = new BufferedWriter(new OutputStreamWriter(sslSocket4.getOutputStream()));
  	        BufferedReader reader4 = new BufferedReader(new InputStreamReader(sslSocket4.getInputStream()));
- 	        writer4.write(String.format("GET %s HTTP/1.1\r\n", "/admintool?cPage=stats&actionId=FLUSH_CACHE")); 
+ 	        writer4.write(String.format("GET %s HTTP/1.1\r\n", fileStr)); 
  	        writer4.write(String.format("Host: %s\r\n", host)); 
  	        writer4.write(String.format("Cookie: %s\r\n\r\n", cookieStr));
  	        writer4.flush();	    
- 	        
  	        while ((responseLine = reader4.readLine()) != null) {
-// 	        	System.out.println(responseLine); 
  	        	finalHTML.append(responseLine + "\n"); 
  	        }
 	  
